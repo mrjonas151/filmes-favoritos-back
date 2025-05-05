@@ -11,32 +11,52 @@ class AuthController extends Controller
 {
     public function login(Request $request)
     {
-        $credentials = $request->only('email', 'password');
+        try {
+            set_time_limit(30);
+            
+            $credentials = $request->only('email', 'password');
+            
+            if (!$token = Auth::guard('api')->attempt($credentials)) {
+                return response()->json(['error' => 'Invalid credentials'], 401);
+            }
+            
+            $user = Auth::guard('api')->user();
 
-        if (!$token = Auth::attempt($credentials)) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+            return response()->json([
+                'token' => $token,
+                'token_type' => 'bearer',
+                'expires_in' => Auth::guard('api')->factory()->getTTL() * 60,
+                'user' => $user
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Login failed: ' . $e->getMessage()
+            ], 500);
         }
-
-        return response()->json([
-            'token' => $token,
-            'token_type' => 'bearer',
-            'expires_in' => auth()->factory()->getTTL() * 60
-        ]);
     }
 
     public function register(Request $request)
     {
         try {
-            $this->validate($request, [
+            $validated = $request->validate([
                 'name' => 'required|string|max:255',
-                'email' => 'required|string|email|max:255|unique:users',
+                'email' => 'required|string|email|max:255',
                 'password' => 'required|string|min:6',
             ]);
-
+            
+            $existingUser = User::where('email', $request->email)->first();
+            if ($existingUser) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Email already exists'
+                ], 422);
+            }
+            
             $user = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
             ]);
 
             return response()->json([
@@ -51,4 +71,5 @@ class AuthController extends Controller
             ], 500);
         }
     }
+
 }
