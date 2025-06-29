@@ -13,7 +13,7 @@ Uma API RESTful baseada em Laravel para gerenciar contas de usuários e filmes f
 
 ```bash
 git clone https://github.com/mrjonas151/filmes-favoritos-back
-cd projeto2_jonas_back
+cd filmes-favoritos-back
 ```
 
 2. Copie o arquivo de ambiente de exemplo e ajuste conforme necessário:
